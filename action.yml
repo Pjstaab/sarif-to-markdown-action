@@ -6,6 +6,10 @@ inputs:
   sarif-file:
     description: 'The sarif data to convert to markdown'
     required: true
+  simple:
+    description: 'If true, will output a simple markdown file'
+    required: false
+    default: 'true'
 
 runs:
   using: node20
