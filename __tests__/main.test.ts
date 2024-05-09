@@ -36,21 +36,8 @@ describe('action', () => {
     getInputMock.mockImplementation(name => {
       switch (name) {
         // Generate a passing SARIF object without any results
-        case 'SARIF':
-          return JSON.stringify({
-            version: '2.1.0',
-            runs: [
-              {
-                tool: {
-                  driver: {
-                    name: 'ESLint',
-                    rules: []
-                  }
-                },
-                results: []
-              }
-            ]
-          })
+        case 'sarifFile':
+          return 'empty.sarif'
         case 'owner':
           return 'owner'
         case 'repo':
@@ -87,37 +74,8 @@ describe('action', () => {
     getInputMock.mockImplementation(name => {
       switch (name) {
         // Generate a failing SARIF object with results
-        case 'SARIF':
-          return JSON.stringify({
-            version: '2.1.0',
-            runs: [
-              {
-                tool: {
-                  driver: {
-                    name: 'ESLint',
-                    rules: []
-                  }
-                },
-                results: [
-                  {
-                    ruleId: 'no-undef',
-                    message: {
-                      text: 'no-undef is not defined'
-                    },
-                    locations: [
-                      {
-                        physicalLocation: {
-                          artifactLocation: {
-                            uri: 'file:///path/to/file.js'
-                          }
-                        }
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          })
+        case 'sarifFile':
+          return 'results.sarif'
         case 'owner':
           return 'owner'
         case 'repo':
@@ -154,8 +112,8 @@ describe('action', () => {
     // Set the action's inputs as return values from core.getInput()
     getInputMock.mockImplementation(name => {
       switch (name) {
-        case 'SARIF':
-          return 'invalid'
+        case 'sarifFile':
+          return 'invalid.sarif'
         case 'owner':
           return 'owner'
         case 'repo':

@@ -1,4 +1,6 @@
 import * as core from '@actions/core'
+import * as fs from 'fs'
+import * as path from 'path'
 import { sarifToMarkdown } from '@security-alert/sarif-to-markdown'
 import type { sarifFormatterOptions } from '@security-alert/sarif-to-markdown'
 
@@ -8,7 +10,7 @@ import type { sarifFormatterOptions } from '@security-alert/sarif-to-markdown'
  */
 export async function run(): Promise<void> {
   try {
-    const SARIF: string = core.getInput('SARIF')
+    const sarifFile: string = core.getInput('sarifFile')
     const fullRepo: string = process.env['GITHUB_REPOSITORY'] || ''
     const owner: string = fullRepo.split('/')[0]
     const repo: string = fullRepo.split('/')[1]
@@ -34,7 +36,12 @@ export async function run(): Promise<void> {
       severities,
       failOn
     }
-    const result = sarifToMarkdown(opts)(JSON.parse(SARIF))
+
+    // Define the path to the file
+    const filePath = path.join(process.env['GITHUB_WORKSPACE'] || '', sarifFile)
+    const data = fs.readFileSync(filePath, 'utf8')
+
+    const result = sarifToMarkdown(opts)(JSON.parse(data))
 
     if (result[0].shouldFail) {
       core.setFailed(result[0].body)

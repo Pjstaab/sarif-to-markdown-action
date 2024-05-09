@@ -25299,6 +25299,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
+const fs = __importStar(__nccwpck_require__(7147));
+const path = __importStar(__nccwpck_require__(1017));
 const sarif_to_markdown_1 = __nccwpck_require__(3643);
 /**
  * Using @securit-alert/sarif-to-markdown to convert SARIF to markdown.
@@ -25306,7 +25308,7 @@ const sarif_to_markdown_1 = __nccwpck_require__(3643);
  */
 async function run() {
     try {
-        const SARIF = core.getInput('SARIF');
+        const sarifFile = core.getInput('sarifFile');
         const fullRepo = process.env['GITHUB_REPOSITORY'] || '';
         const owner = fullRepo.split('/')[0];
         const repo = fullRepo.split('/')[1];
@@ -25329,7 +25331,10 @@ async function run() {
             severities,
             failOn
         };
-        const result = (0, sarif_to_markdown_1.sarifToMarkdown)(opts)(JSON.parse(SARIF));
+        // Define the path to the file
+        const filePath = path.join(process.env['GITHUB_WORKSPACE'] || '', sarifFile);
+        const data = fs.readFileSync(filePath, 'utf8');
+        const result = (0, sarif_to_markdown_1.sarifToMarkdown)(opts)(JSON.parse(data));
         if (result[0].shouldFail) {
             core.setFailed(result[0].body);
         }
