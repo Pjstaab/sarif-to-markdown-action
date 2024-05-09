@@ -3,7 +3,7 @@ description: 'Converts sarif to markdown for use in a GitHub Action'
 author: 'Pjstaab'
 
 inputs:
-  sarif:
+  sarifFile:
     description: 'The sarif data to convert to markdown'
     required: true
 
