@@ -25308,7 +25308,7 @@ const sarif_to_markdown_1 = __nccwpck_require__(3643);
  */
 async function run() {
     try {
-        const sarifFile = core.getInput('sarifFile');
+        const sarifFile = core.getInput('sarif-file');
         const fullRepo = process.env['GITHUB_REPOSITORY'] || '';
         const owner = fullRepo.split('/')[0];
         const repo = fullRepo.split('/')[1];
@@ -25319,6 +25319,7 @@ async function run() {
         const simple = core.getInput('simple') === 'true';
         const severities = core.getInput('severities').split(',');
         const failOn = core.getInput('failOn');
+        const output = core.getInput('output') || '';
         // Convert the SARIF to markdown
         const opts = {
             owner,
@@ -25337,6 +25338,9 @@ async function run() {
         const result = (0, sarif_to_markdown_1.sarifToMarkdown)(opts)(JSON.parse(data));
         if (result[0].shouldFail) {
             core.setFailed(result[0].body);
+        }
+        if (output) {
+            fs.writeFileSync(output, result[0].body);
         }
         // Output the markdown to the summary
         await core.summary

@@ -36,7 +36,7 @@ describe('action', () => {
     getInputMock.mockImplementation(name => {
       switch (name) {
         // Generate a passing SARIF object without any results
-        case 'sarifFile':
+        case 'sarif-file':
           return 'empty.sarif'
         case 'owner':
           return 'owner'
@@ -74,7 +74,7 @@ describe('action', () => {
     getInputMock.mockImplementation(name => {
       switch (name) {
         // Generate a failing SARIF object with results
-        case 'sarifFile':
+        case 'sarif-file':
           return 'results.sarif'
         case 'owner':
           return 'owner'
@@ -112,7 +112,7 @@ describe('action', () => {
     // Set the action's inputs as return values from core.getInput()
     getInputMock.mockImplementation(name => {
       switch (name) {
-        case 'sarifFile':
+        case 'sarif-file':
           return 'invalid.sarif'
         case 'owner':
           return 'owner'

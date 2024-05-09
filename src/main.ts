@@ -10,7 +10,7 @@ import type { sarifFormatterOptions } from '@security-alert/sarif-to-markdown'
  */
 export async function run(): Promise<void> {
   try {
-    const sarifFile: string = core.getInput('sarifFile')
+    const sarifFile: string = core.getInput('sarif-file')
     const fullRepo: string = process.env['GITHUB_REPOSITORY'] || ''
     const owner: string = fullRepo.split('/')[0]
     const repo: string = fullRepo.split('/')[1]
@@ -23,6 +23,7 @@ export async function run(): Promise<void> {
     const simple: boolean = core.getInput('simple') === 'true'
     const severities: string[] = core.getInput('severities').split(',')
     const failOn: string = core.getInput('failOn')
+    const output: string = core.getInput('output') || ''
 
     // Convert the SARIF to markdown
     const opts: sarifFormatterOptions = {
@@ -45,6 +46,10 @@ export async function run(): Promise<void> {
 
     if (result[0].shouldFail) {
       core.setFailed(result[0].body)
+    }
+
+    if (output) {
+      fs.writeFileSync(output, result[0].body)
     }
 
     // Output the markdown to the summary
