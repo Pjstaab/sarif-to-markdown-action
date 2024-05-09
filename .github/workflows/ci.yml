@@ -57,4 +57,4 @@ jobs:
         id: test-action
         uses: ./
         with:
-          input: 'empty.sarif'
+          sarifFile: 'empty.sarif'
