@@ -1834,6 +1834,269 @@ function isLoopbackAddress(host) {
 
 /***/ }),
 
+/***/ 3643:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __makeTemplateObject = (this && this.__makeTemplateObject) || function (cooked, raw) {
+    if (Object.defineProperty) { Object.defineProperty(cooked, "raw", { value: raw }); } else { cooked.raw = raw; }
+    return cooked;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.sarifToMarkdown = void 0;
+// @ts-ignore
+var markdown_escape_1 = __importDefault(__nccwpck_require__(5913));
+var url_join_1 = __importDefault(__nccwpck_require__(2821));
+function escapeMarkdown(strings) {
+    var values = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        values[_i - 1] = arguments[_i];
+    }
+    return strings.reduce(function (result, str, i) {
+        var value = values[i - 1];
+        if (typeof value === "string") {
+            return result + (0, markdown_escape_1.default)(value) + str;
+        }
+        else {
+            return result + String(value) + str;
+        }
+    });
+}
+function createRuleInfo(run) {
+    var _a, _b;
+    return escapeMarkdown(templateObject_1 || (templateObject_1 = __makeTemplateObject(["\n## Rules information\n<!-- Rule Info -->\n<details><summary>Rules details</summary>\n", "</details>"], ["\n## Rules information\n<!-- Rule Info -->\n<details><summary>Rules details</summary>\n", "</details>"])), (_b = (_a = run.tool.driver) === null || _a === void 0 ? void 0 : _a.rules) === null || _b === void 0 ? void 0 : _b.map(function (rule) {
+        var _a, _b;
+        var severity = rule.properties ? (_a = rule.properties) === null || _a === void 0 ? void 0 : _a["problem.severity"] : "";
+        // rule description
+        return "\n\n    - ".concat(rule.id, " [").concat(severity, "] \n\n    > ").concat((_b = rule.shortDescription) === null || _b === void 0 ? void 0 : _b.text, "\n");
+    }));
+}
+function createToolInfo(run) {
+    var _a, _b, _c;
+    return "\n## Tool information\n- Name: ".concat((_a = run.tool.driver) === null || _a === void 0 ? void 0 : _a.name, "\n- Organization: ").concat((_b = run.tool.driver) === null || _b === void 0 ? void 0 : _b.organization, "\n- Version: ").concat((_c = run.tool.driver) === null || _c === void 0 ? void 0 : _c.semanticVersion, "\n");
+}
+var createCodeURL = function (result, options) {
+    var _a, _b;
+    var githubHost = (_a = options.githubHost) !== null && _a !== void 0 ? _a : "https://github.com";
+    if (!Array.isArray(result.locations)) {
+        return [];
+    }
+    return (_b = result.locations) === null || _b === void 0 ? void 0 : _b.flatMap(function (location) {
+        if (!location.physicalLocation) {
+            return [];
+        }
+        var physicalLocation = location.physicalLocation;
+        if (!physicalLocation.artifactLocation) {
+            return [];
+        }
+        if (!physicalLocation.region) {
+            return [];
+        }
+        var lineNumber = physicalLocation.region.endLine !== undefined
+            ? "L".concat(physicalLocation.region.startLine, "-L").concat(physicalLocation.region.endLine)
+            : "L".concat(physicalLocation.region.startLine);
+        return (0, url_join_1.default)(githubHost, options.owner, options.repo, "blob/".concat(options.branch), options.sourceRoot, "".concat(physicalLocation.artifactLocation.uri, "#").concat(lineNumber));
+    });
+};
+function groupBy(arr, criteria) {
+    var newObj = arr.reduce(function (acc, currentValue) {
+        if (!acc[currentValue[criteria]]) {
+            acc[currentValue[criteria]] = [];
+        }
+        acc[currentValue[criteria]].push(currentValue);
+        return acc;
+    }, {});
+    return newObj;
+}
+// same as filterGroupedResultsBySeverity
+function detectFailure(arr, failOn, run) {
+    var _a, _b;
+    // 1st step, go through run and find rule severities
+    // 2nd step, filter groupedResults and remove rulegroups that don't match the severities filter
+    var ruleSeverityMapping = new Map();
+    (_b = (_a = run.tool.driver) === null || _a === void 0 ? void 0 : _a.rules) === null || _b === void 0 ? void 0 : _b.forEach(function (rule) {
+        var _a, _b;
+        var severity = (_b = (_a = rule.defaultConfiguration) === null || _a === void 0 ? void 0 : _a.level) !== null && _b !== void 0 ? _b : "";
+        ruleSeverityMapping.set(rule.id, severity);
+    });
+    // if one of the results uses a rule that has a severity that we should fail on, return true
+    return arr.reduce(function (acc, r) {
+        var _a, _b;
+        var sevrule = (_b = ruleSeverityMapping.get((_a = r.ruleId) !== null && _a !== void 0 ? _a : "")) !== null && _b !== void 0 ? _b : "";
+        return failOn.includes(sevrule) || acc; // always returns true if there is one of the map values is true
+    }, false);
+}
+function createGroupedResultsMarkdown(groupedResults, run, options) {
+    var _a, _b, _c, _d;
+    var groupedResultsMarkdown = "";
+    var _loop_1 = function (rule) {
+        var ruleMatch = run.tool.driver.rules.filter(function (r) {
+            return r.id == rule;
+        });
+        var severityLevel = (_c = (_b = (_a = ruleMatch[0].defaultConfiguration) === null || _a === void 0 ? void 0 : _a.level) === null || _b === void 0 ? void 0 : _b.toUpperCase()) !== null && _c !== void 0 ? _c : "";
+        var helpUri = ruleMatch[0].helpUri !== undefined ? (_d = "[[HELP LINK](" + ruleMatch[0].helpUri + ")]") !== null && _d !== void 0 ? _d : "" : "";
+        groupedResultsMarkdown +=
+            "- **".concat("[" + severityLevel + "]** **[" + rule + "]** " + helpUri, " `").concat(groupedResults[rule][0] ? (0, markdown_escape_1.default)(groupedResults[rule][0].message.text) : "", "`") + "\n";
+        for (var _i = 0, _e = groupedResults[rule]; _i < _e.length; _i++) {
+            var result = _e[_i];
+            var properResult = result;
+            if (properResult.suppressions === undefined) {
+                groupedResultsMarkdown += "    - " + createCodeURL(result, options) + "\n";
+            }
+        }
+    };
+    for (var rule in groupedResults) {
+        _loop_1(rule);
+    }
+    return groupedResultsMarkdown;
+}
+function createGroupedSuppressedResultsMarkdown(groupedResults, run, options) {
+    var _a, _b, _c, _d;
+    var groupedSuppressedResultsMD = "";
+    var suppressedCounter = 0;
+    var _loop_2 = function (rule) {
+        var groupContainsSuppressed = groupedResults[rule].filter(function (r) { return r.suppressions !== undefined; }).length > 0;
+        if (groupContainsSuppressed) {
+            var ruleMatch = run.tool.driver.rules.filter(function (r) {
+                return r.id == rule;
+            });
+            var helpUri = ruleMatch[0].helpUri !== undefined ? (_a = "[[HELP LINK](" + ruleMatch[0].helpUri + ")]") !== null && _a !== void 0 ? _a : "" : "";
+            var severityLevel = (_d = (_c = (_b = ruleMatch[0].defaultConfiguration) === null || _b === void 0 ? void 0 : _b.level) === null || _c === void 0 ? void 0 : _c.toUpperCase()) !== null && _d !== void 0 ? _d : "";
+            groupedSuppressedResultsMD +=
+                "- **".concat("[" + severityLevel + "]** **[" + rule + "]** " + helpUri, " `").concat(groupedResults[rule][0] ? (0, markdown_escape_1.default)(groupedResults[rule][0].message.text) : "", "`") + "\n";
+            for (var _i = 0, _e = groupedResults[rule]; _i < _e.length; _i++) {
+                var result = _e[_i];
+                var properResult = result;
+                if (properResult.suppressions !== undefined) {
+                    suppressedCounter += 1;
+                    groupedSuppressedResultsMD += "    - " + createCodeURL(result, options) + "\n";
+                }
+            }
+        }
+    };
+    for (var rule in groupedResults) {
+        _loop_2(rule);
+    }
+    return { groupedSuppressedResultsMD: groupedSuppressedResultsMD, suppressedCounter: suppressedCounter };
+}
+function filterGroupedResultsBySeverity(groupedResults, severities, run) {
+    var _a, _b;
+    // 1st step, go through run and find rule severities
+    // 2nd step, filter groupedResults and remove rulegroups that don't match the severities filter
+    var ruleSeverityMapping = new Map();
+    (_b = (_a = run.tool.driver) === null || _a === void 0 ? void 0 : _a.rules) === null || _b === void 0 ? void 0 : _b.forEach(function (rule) {
+        var _a, _b;
+        var severity = (_b = (_a = rule.defaultConfiguration) === null || _a === void 0 ? void 0 : _a.level) !== null && _b !== void 0 ? _b : "";
+        ruleSeverityMapping.set(rule.id, severity);
+    });
+    var filteredResults = Object.keys(groupedResults)
+        .filter(function (rule) {
+        var _a;
+        return severities.includes((_a = ruleSeverityMapping.get(rule)) !== null && _a !== void 0 ? _a : "unknownseverity");
+    })
+        .reduce(function (obj, key) {
+        obj[key] = groupedResults[key];
+        return obj;
+    }, {});
+    return filteredResults;
+}
+var sarifToMarkdown = function (options) {
+    var _a, _b;
+    var suppressedResultsFlag = options.suppressedResults !== undefined ? options.suppressedResults : true;
+    var simpleMode = options.simple !== undefined ? options.simple : false;
+    var severities = (_a = options.severities) !== null && _a !== void 0 ? _a : ["warning", "error", "note", "none"];
+    var failOn = (_b = options.failOn) !== null && _b !== void 0 ? _b : false; // if not set, don't fail for anything
+    return function (sarifLog) {
+        return sarifLog.runs.map(function (run) {
+            var title = options.title ? "# ".concat(options.title, "\n") : "# Report";
+            var toolInfo = simpleMode ? "" : createToolInfo(run);
+            var ruleInfo = simpleMode ? "" : createRuleInfo(run);
+            var ruleDetails = "<details><summary>Details</summary>\n<pre>".concat(JSON.stringify(run.tool, null, 4), "</pre></details>\n");
+            var groupedResults = groupBy(run.results, "ruleId");
+            var filteredResults = filterGroupedResultsBySeverity(groupedResults, severities, run);
+            var groupedResultsMarkdown = createGroupedResultsMarkdown(filteredResults, run, options);
+            var hasMessage = run.results && run.results.length > 0 && Object.keys(filteredResults).length > 0;
+            var shouldFail = failOn === false ? false : detectFailure(run.results, failOn, run);
+            /* Results
+            - rule id
+            - message
+            - vulnerability source location
+
+            If pass the scan, results is empty array
+            */
+            var results = hasMessage
+                ? "\n## Results\n\n".concat(groupedResultsMarkdown, "\n")
+                : "\n## Results\n\nNothing here.\n\n";
+            var _a = createGroupedSuppressedResultsMarkdown(filteredResults, run, options), groupedSuppressedResultsMD = _a.groupedSuppressedResultsMD, suppressedCounter = _a.suppressedCounter;
+            // careful, double ternary... first check if we should include suppressedresults (return empty string)
+            // then check if there are results, if none, return default string
+            var suppressedResultsText = suppressedResultsFlag
+                ? run.results && suppressedCounter > 0
+                    ? "\n## Suppressed results\n\n".concat(groupedSuppressedResultsMD, "\n")
+                    : "\n## Suppressed Results\n\nNothing here.\n\n"
+                : "";
+            if (options.details) {
+                return {
+                    body: title +
+                        results +
+                        "\n" +
+                        suppressedResultsText +
+                        "\n" +
+                        ruleInfo +
+                        "\n" +
+                        ruleDetails +
+                        toolInfo,
+                    hasMessages: hasMessage,
+                    shouldFail: shouldFail
+                };
+            }
+            return {
+                body: title + results + "\n" + suppressedResultsText + "\n" + ruleInfo + "\n" + toolInfo,
+                hasMessages: hasMessage,
+                shouldFail: shouldFail
+            };
+        });
+    };
+};
+exports.sarifToMarkdown = sarifToMarkdown;
+var templateObject_1;
+//# sourceMappingURL=sarif-to-markdown.js.map
+
+/***/ }),
+
+/***/ 5913:
+/***/ ((module) => {
+
+var replacements = [
+  [/\*/g, '\\*', 'asterisks'],
+  [/#/g, '\\#', 'number signs'],
+  [/\//g, '\\/', 'slashes'],
+  [/\(/g, '\\(', 'parentheses'],
+  [/\)/g, '\\)', 'parentheses'],
+  [/\[/g, '\\[', 'square brackets'],
+  [/\]/g, '\\]', 'square brackets'],
+  [/</g, '&lt;', 'angle brackets'],
+  [/>/g, '&gt;', 'angle brackets'],
+  [/_/g, '\\_', 'underscores']
+]
+
+module.exports = function (string, skips) {
+  skips = skips || []
+  return replacements.reduce(function (string, replacement) {
+    var name = replacement[2]
+    return name && skips.indexOf(name) !== -1
+      ? string
+      : string.replace(replacement[0], replacement[1])
+  }, string)
+}
+
+
+/***/ }),
+
 /***/ 4294:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -24274,6 +24537,91 @@ module.exports = {
 
 /***/ }),
 
+/***/ 2821:
+/***/ (function(module) {
+
+(function (name, context, definition) {
+  if ( true && module.exports) module.exports = definition();
+  else if (typeof define === 'function' && define.amd) define(definition);
+  else context[name] = definition();
+})('urljoin', this, function () {
+
+  function normalize (strArray) {
+    var resultArray = [];
+    if (strArray.length === 0) { return ''; }
+
+    if (typeof strArray[0] !== 'string') {
+      throw new TypeError('Url must be a string. Received ' + strArray[0]);
+    }
+
+    // If the first part is a plain protocol, we combine it with the next part.
+    if (strArray[0].match(/^[^/:]+:\/*$/) && strArray.length > 1) {
+      var first = strArray.shift();
+      strArray[0] = first + strArray[0];
+    }
+
+    // There must be two or three slashes in the file protocol, two slashes in anything else.
+    if (strArray[0].match(/^file:\/\/\//)) {
+      strArray[0] = strArray[0].replace(/^([^/:]+):\/*/, '$1:///');
+    } else {
+      strArray[0] = strArray[0].replace(/^([^/:]+):\/*/, '$1://');
+    }
+
+    for (var i = 0; i < strArray.length; i++) {
+      var component = strArray[i];
+
+      if (typeof component !== 'string') {
+        throw new TypeError('Url must be a string. Received ' + component);
+      }
+
+      if (component === '') { continue; }
+
+      if (i > 0) {
+        // Removing the starting slashes for each component but the first.
+        component = component.replace(/^[\/]+/, '');
+      }
+      if (i < strArray.length - 1) {
+        // Removing the ending slashes for each component but the last.
+        component = component.replace(/[\/]+$/, '');
+      } else {
+        // For the last component we will combine multiple slashes to a single one.
+        component = component.replace(/[\/]+$/, '/');
+      }
+
+      resultArray.push(component);
+
+    }
+
+    var str = resultArray.join('/');
+    // Each input component is now separated by a single slash except the possible first plain protocol part.
+
+    // remove trailing slash before parameters or hash
+    str = str.replace(/\/(\?|&|#[^!])/g, '$1');
+
+    // replace ? in parameters with &
+    var parts = str.split('?');
+    str = parts.shift() + (parts.length > 0 ? '?': '') + parts.join('&');
+
+    return str;
+  }
+
+  return function () {
+    var input;
+
+    if (typeof arguments[0] === 'object') {
+      input = arguments[0];
+    } else {
+      input = [].slice.call(arguments);
+    }
+
+    return normalize(input);
+  };
+
+});
+
+
+/***/ }),
+
 /***/ 5840:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -24951,22 +25299,54 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-const wait_1 = __nccwpck_require__(5259);
+const fs = __importStar(__nccwpck_require__(7147));
+const path = __importStar(__nccwpck_require__(1017));
+const sarif_to_markdown_1 = __nccwpck_require__(3643);
 /**
- * The main function for the action.
+ * Using @securit-alert/sarif-to-markdown to convert SARIF to markdown.
  * @returns {Promise<void>} Resolves when the action is complete.
  */
 async function run() {
     try {
-        const ms = core.getInput('milliseconds');
-        // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-        core.debug(`Waiting ${ms} milliseconds ...`);
-        // Log the current timestamp, wait, then log the new timestamp
-        core.debug(new Date().toTimeString());
-        await (0, wait_1.wait)(parseInt(ms, 10));
-        core.debug(new Date().toTimeString());
-        // Set outputs for other workflow steps to use
-        core.setOutput('time', new Date().toTimeString());
+        const sarifFile = core.getInput('sarif-file');
+        const fullRepo = process.env['GITHUB_REPOSITORY'] || '';
+        const owner = fullRepo.split('/')[0];
+        const repo = fullRepo.split('/')[1];
+        const branch = process.env['GITHUB_REF'] || 'Failed to get branch';
+        const sourceRoot = process.env['GITHUB_WORKSPACE'] || 'Failed to get source root';
+        const details = core.getInput('details') === 'true';
+        const suppressedResults = core.getInput('suppressedResults') === 'true';
+        const simple = core.getInput('simple') === 'true';
+        const severities = core.getInput('severities').split(',');
+        const failOn = core.getInput('failOn');
+        const output = core.getInput('output') || '';
+        // Convert the SARIF to markdown
+        const opts = {
+            owner,
+            repo,
+            branch,
+            sourceRoot,
+            details,
+            suppressedResults,
+            simple,
+            severities,
+            failOn
+        };
+        // Define the path to the file
+        const filePath = path.join(process.env['GITHUB_WORKSPACE'] || '', sarifFile);
+        const data = fs.readFileSync(filePath, 'utf8');
+        const result = (0, sarif_to_markdown_1.sarifToMarkdown)(opts)(JSON.parse(data));
+        if (result[0].shouldFail) {
+            core.setFailed(result[0].body);
+        }
+        if (output) {
+            fs.writeFileSync(output, result[0].body);
+        }
+        // Output the markdown to the summary
+        await core.summary
+            .addHeading(result[0].title || 'Security Alert Report')
+            .addRaw(result[0].body, true)
+            .write();
     }
     catch (error) {
         // Fail the workflow run if an error occurs
@@ -24975,31 +25355,6 @@ async function run() {
     }
 }
 exports.run = run;
-
-
-/***/ }),
-
-/***/ 5259:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.wait = void 0;
-/**
- * Wait for a number of milliseconds.
- * @param milliseconds The number of milliseconds to wait.
- * @returns {Promise<string>} Resolves with 'done!' after the wait is over.
- */
-async function wait(milliseconds) {
-    return new Promise(resolve => {
-        if (isNaN(milliseconds)) {
-            throw new Error('milliseconds not a number');
-        }
-        setTimeout(() => resolve('done!'), milliseconds);
-    });
-}
-exports.wait = wait;
 
 
 /***/ }),
